@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cartas de Controle – H2O</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#000; --fg:#fff; --glass:rgba(0,0,0,.55); }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Arial,system-ui,sans-serif;overflow:hidden}
+    /* container do iframe para garantir centralização visual quando houver letterbox */
+    .stage{position:fixed;inset:0;display:grid;place-items:center;background:#000}
+    iframe{width:100vw;height:100vh;border:0;display:block}
+
+    .topbar{
+      position:fixed;top:0;left:0;right:0;z-index:10;
+      display:flex;justify-content:center;align-items:center;
+      padding:8px 14px;background:var(--glass);backdrop-filter:blur(4px);
+      font-weight:700;letter-spacing:.3px;user-select:none
+    }
+    .title{max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .controls{
+      position:fixed;bottom:0;left:0;right:0;z-index:20;
+      display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;
+      padding:10px;background:var(--glass);backdrop-filter:blur(4px)
+    }
+    .btn{
+      background:#111;border:1px solid #aaa;color:#fff;
+      padding:6px 12px;border-radius:10px;cursor:pointer;font-size:14px
+    }
+    .btn:hover{background:#1a1a1a}
+    .badge{border:1px solid #6cf;color:#6cf;padding:4px 10px;border-radius:999px;font-size:12px}
+    .timer{font-weight:600;opacity:.9;padding:4px 10px;border:1px solid #6cf;border-radius:999px}
+
+    /* Select escuro */
+    select, input[type="number"]{
+      color:#fff;background:#111;border:1px solid #aaa;border-radius:10px;
+      padding:6px 12px;font-size:14px;outline-color:#6cf
+    }
+    select{
+      -webkit-appearance:none;appearance:none;padding-right:34px;
+      background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M7 10l5 5 5-5z"/></svg>');
+      background-repeat:no-repeat;background-position:right 10px center;background-size:16px
+    }
+    option{background:#111;color:#fff}
+
+    /* Piscar 3x no título ao trocar */
+    @keyframes blink3{0%,20%,40%,60%,80%,100%{opacity:1}10%,30%,50%,70%,90%{opacity:.15}}
+    .blink3{animation:blink3 2.2s ease-in-out 1}
+  </style>
+</head>
+<body>
+  <!-- topo só com o título -->
+  <div class="topbar"><span id="title" class="title">Carregando…</span></div>
+
+  <div class="stage">
+    <iframe id="frame" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="prev">⟵ Anterior</button>
+    <button class="btn" id="play">▶️ Play</button>
+    <button class="btn" id="pause" style="display:none">⏸️ Pause</button>
+    <button class="btn" id="next">Próximo ⟶</button>
+
+    <span class="badge" id="pos">1/7</span>
+
+    <!-- Presets de tempo -->
+    <label style="display:flex;gap:6px;align-items:center">
+      ⏱️
+      <select id="preset">
+        <option value="30">30s</option>
+        <option value="60" selected>60s</option>
+        <option value="90">90s</option>
+        <option value="120">120s</option>
+        <option value="custom">Personalizado…</option>
+      </select>
+      <input id="customSec" type="number" min="5" step="5" value="60" style="width:90px;display:none" />
+    </label>
+
+    <!-- seletor dos gráficos -->
+    <select id="picker" title="Ir para…"></select>
+
+    <!-- ⏳ contador AGORA EMBAIXO, ao lado do menu -->
+    <span class="timer" id="count">⏳ —</span>
+  </div>
+
+  <script>
+    // ====== TUA LISTA DE LINKS ======
+    const items = [
+      { name: "Carta controle – TURBIDEZ",      src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
+      { name: "Carta controle – CONDUTIVIDADE", src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
+      { name: "Carta controle – CLORETOS",      src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_XduoLKR53GrUo2Hr8NKC0V3EWJhmKaixuoo8_wi2acWPfntklPrQiJUnAumFcVm7O4Ja_UjXHivG/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
+      { name: "Carta controle – DUREZA",        src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7_mU1lYCuIwEQVMY2S4iXF64KONUmAPGljssIzs8BN756TuoiqjCNgirmkKZdFbjEpob8Er6a3wfj/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
+      { name: "Carta controle – PH4",           src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEMAALnRRAdgtTfumRNyxVpMdWhqBJECe_CClCFWLDCQamHm36oYw_dKhL3shrL9XbwT6GZMjYpXYu/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
+      { name: "Carta controle – PH7",           src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTooEo0R432lzvG_qcCtcuvJZqpHe3RylZ2tUvIMb5PtcrU1eJt3JTPNuA75_Fb91VsGg8-mAL-cc7m/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
+      { name: "Carta controle – PH10",          src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST8sCupvmxTYk0fnzZFQmFQwo0RGNo4JaVMlqvSHcj3CtBwH6SOkNW4HkR-K-S4mP4IdVGWXn8ofiP/pubhtml?gid=153412780&single=true&widget=true&headers=false" }
+    ];
+
+    // ====== CARROSSEL + TIMER ======
+    let idx = 0, timer = null, countdownTick = null, secs = 60, left = 60;
+    const frame   = document.getElementById('frame');
+    const title   = document.getElementById('title');
+    const picker  = document.getElementById('picker');
+    const pos     = document.getElementById('pos');
+    const playBtn = document.getElementById('play');
+    const pauseBtn= document.getElementById('pause');
+    const countEl = document.getElementById('count');
+    const preset  = document.getElementById('preset');
+    const customS = document.getElementById('customSec');
+
+    function displayName(full){
+      if (!full) return "";
+      const parts = full.split("–");
+      return parts.length > 1 ? parts[1].trim() : full.trim();
+    }
+
+    // Mantém params corretos para pubhtml; se for pubchart, injeta w/h da tela
+    function sanitizeSrc(u){
+      let s = String(u)
+        .replace(/(\?|&)widget=false/,'$1widget=true')
+        .replace(/(\?|&)headers=true/,'$1headers=false');
+      if (s.includes('/pubchart')){
+        const w = Math.max(640, window.innerWidth);
+        const h = Math.max(360, window.innerHeight);
+        if (!/([?&])format=interactive(\b|&)/.test(s)){
+          s += (s.includes('?')?'&':'?') + 'format=interactive';
+        } else {
+          s = s.replace(/format=[^&]*/,'format=interactive');
+        }
+        s = s.replace(/([?&])w=\d+/g,'').replace(/([?&])h=\d+/g,'').replace(/&&/g,'&').replace(/\?&/,'?');
+        s += `&w=${w}&h=${h}`;
+      }
+      return s;
+    }
+
+    function updateCountdownBadge(){ countEl.textContent = `⏳ ${left}s`; }
+    function resetCountdown(){
+      left = secs; updateCountdownBadge();
+      if (countdownTick) clearInterval(countdownTick);
+      countdownTick = setInterval(()=>{ if (left>0){ left--; updateCountdownBadge(); } },1000);
+    }
+
+    function load(i){
+      idx = (i + items.length) % items.length;
+      frame.src = sanitizeSrc(items[idx].src);
+      const nice = displayName(items[idx].name);
+      title.textContent = `${nice} (${idx+1}/${items.length})`;
+      title.classList.remove('blink3'); void title.offsetWidth; title.classList.add('blink3');
+      picker.value = String(idx);
+      pos.textContent = `${idx+1}/${items.length}`;
+      resetCountdown();
+    }
+
+    function next(){ load(idx+1); }
+    function prev(){ load(idx-1); }
+
+    function startTimer(){
+      if (timer) clearInterval(timer);
+      timer = setInterval(next, secs*1000);
+      playBtn.style.display='none'; pauseBtn.style.display='';
+      resetCountdown();
+    }
+    function play(){ startTimer(); }
+    function pause(){
+      clearInterval(timer); timer=null;
+      if (countdownTick) clearInterval(countdownTick);
+      countEl.textContent = "⏳ —";
+      pauseBtn.style.display='none'; playBtn.style.display='';
+    }
+
+    function applyPreset(){
+      const val = preset.value;
+      if (val === 'custom'){
+        customS.style.display='inline-block';
+        secs = Math.max(5, Number(customS.value)||60);
+      } else {
+        customS.style.display='none';
+        secs = Number(val);
+      }
+      if (timer) startTimer(); else { left = secs; updateCountdownBadge(); }
+      localStorage.setItem('h2o_secs', String(secs));
+    }
+    preset.onchange = applyPreset;
+    customS.onchange = applyPreset;
+
+    // Popular seletor
+    items.forEach((it, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = displayName(it.name);
+      picker.appendChild(opt);
+    });
+
+    // Eventos
+    document.getElementById('prev').onclick = prev;
+    document.getElementById('next').onclick = next;
+    playBtn.onclick = play;
+    pauseBtn.onclick = pause;
+    picker.onchange = e => load(Number(e.target.value));
+    window.addEventListener('keydown', ev=>{
+      if(ev.key==='ArrowRight') next();
+      else if(ev.key==='ArrowLeft') prev();
+      else if(ev.code==='Space'){ev.preventDefault(); timer?pause():play();}
+      else if(ev.key==='+'){ secs = Math.min(999, secs+10); (preset.value!=='custom')&&(preset.value='custom'); customS.style.display='inline-block'; customS.value=secs; if(timer)startTimer(); else{left=secs;updateCountdownBadge();}}
+      else if(ev.key==='-'){ secs = Math.max(5, secs-10);  (preset.value!=='custom')&&(preset.value='custom'); customS.style.display='inline-block'; customS.value=secs; if(timer)startTimer(); else{left=secs;updateCountdownBadge();}}
+    });
+
+    // Reajusta pubchart quando redimensionar
+    let rsz;
+    window.addEventListener('resize', ()=>{
+      clearTimeout(rsz);
+      rsz = setTimeout(()=>{ frame.src = sanitizeSrc(items[idx].src); }, 200);
+    });
+
+    // Restaura último tempo
+    const saved = Number(localStorage.getItem('h2o_secs'));
+    if(saved && saved>=5){ secs = saved; customS.value = saved; preset.value='custom'; customS.style.display='inline-block'; }
+
+    // Start
+    load(0);
+  </script>
+</body>
+</html>
