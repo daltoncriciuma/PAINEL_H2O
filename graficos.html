@@ -9,39 +9,16 @@
     html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Arial,system-ui,sans-serif;overflow:hidden}
     .stage{position:fixed;inset:0;display:grid;place-items:center;background:#000}
     iframe{width:100vw;height:100vh;border:0;display:block}
-
-    .topbar{
-      position:fixed;top:0;left:0;right:0;z-index:10;
-      display:flex;justify-content:center;align-items:center;
-      padding:8px 14px;background:var(--glass);backdrop-filter:blur(4px);
-      font-weight:700;letter-spacing:.3px;user-select:none
-    }
+    .topbar{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:center;align-items:center;padding:8px 14px;background:var(--glass);backdrop-filter:blur(4px);font-weight:700;letter-spacing:.3px;user-select:none}
     .title{max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-    .controls{
-      position:fixed;bottom:0;left:0;right:0;z-index:20;
-      display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;
-      padding:10px;background:var(--glass);backdrop-filter:blur(4px)
-    }
-    .btn{
-      background:#111;border:1px solid #aaa;color:#fff;
-      padding:6px 12px;border-radius:10px;cursor:pointer;font-size:14px
-    }
+    .controls{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;padding:10px;background:var(--glass);backdrop-filter:blur(4px)}
+    .btn{background:#111;border:1px solid #aaa;color:#fff;padding:6px 12px;border-radius:10px;cursor:pointer;font-size:14px}
     .btn:hover{background:#1a1a1a}
     .badge{border:1px solid #6cf;color:#6cf;padding:4px 10px;border-radius:999px;font-size:12px}
     .timer{font-weight:600;opacity:.9;padding:4px 10px;border:1px solid #6cf;border-radius:999px}
-
-    select, input[type="number"]{
-      color:#fff;background:#111;border:1px solid #aaa;border-radius:10px;
-      padding:6px 12px;font-size:14px;outline-color:#6cf
-    }
-    select{
-      -webkit-appearance:none;appearance:none;padding-right:34px;
-      background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M7 10l5 5 5-5z"/></svg>');
-      background-repeat:no-repeat;background-position:right 10px center;background-size:16px
-    }
+    select,input[type="number"]{color:#fff;background:#111;border:1px solid #aaa;border-radius:10px;padding:6px 12px;font-size:14px;outline-color:#6cf}
+    select{-webkit-appearance:none;appearance:none;padding-right:34px;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M7 10l5 5 5-5z"/></svg>');background-repeat:no-repeat;background-position:right 10px center;background-size:16px}
     option{background:#111;color:#fff}
-
     @keyframes blink3{0%,20%,40%,60%,80%,100%{opacity:1}10%,30%,50%,70%,90%{opacity:.15}}
     .blink3{animation:blink3 2.2s ease-in-out 1}
   </style>
@@ -78,7 +55,7 @@
   </div>
 
   <script>
-    // ====== TUA LISTA DE LINKS (mantida) ======
+    // ====== LISTA (mantida) ======
     const items = [
       { name: "Carta controle – TURBIDEZ",      src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
       { name: "Carta controle – CONDUTIVIDADE", src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
@@ -89,7 +66,7 @@
       { name: "Carta controle – PH10",          src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST8sCupvmxTYk0fnzZFQmFQwo0RGNo4JaVMlqvSHcj3CtBwH6SOkNW4HkR-K-S4mP4IdVGWXn8ofiP/pubhtml?gid=153412780&single=true&widget=true&headers=false" }
     ];
 
-    // ====== CARROSSEL + TIMER ======
+    // ====== Estado/UI ======
     let idx = 0, timer = null, countdownTick = null, secs = 60, left = 60;
     const frame   = document.getElementById('frame');
     const title   = document.getElementById('title');
@@ -101,13 +78,20 @@
     const preset  = document.getElementById('preset');
     const customS = document.getElementById('customSec');
 
+    // ---------- ÚNICA MUDANÇA: extrai SEMPRE a 2ª parte do nome ----------
     function displayName(full){
       if (!full) return "";
-      const parts = full.split("–");
-      return parts.length > 1 ? parts[1].trim() : full.trim();
+      // se vier um caminho/arquivo, usa a parte do nome
+      const base = String(full).split('/').pop();
+      const noExt = base.replace(/\.[^.]+$/,'');
+      const clean = noExt.replace(/\s+/g,' ').trim();
+      const parts = clean.split(/\s*[–—\-:|]\s*/).filter(Boolean);
+      // pega a 2ª parte se existir; senão, a última
+      return (parts.length >= 2 ? parts[1] : parts[parts.length-1] || "").trim();
     }
+    // ---------------------------------------------------------------------
 
-    // --------- PATCH: cache-buster p/ não “congelar” título antigo ----------
+    // cache-buster (mantido)
     const CACHE_TTL_S = 60;
     const cacheKey = () => Math.floor(Date.now() / (CACHE_TTL_S * 1000));
 
@@ -115,7 +99,6 @@
       let s = String(u)
         .replace(/(\?|&)widget=false/,'$1widget=true')
         .replace(/(\?|&)headers=true/,'$1headers=false');
-
       if (s.includes('/pubchart')){
         const w = Math.max(640, window.innerWidth);
         const h = Math.max(360, window.innerHeight);
@@ -124,17 +107,12 @@
         } else {
           s = s.replace(/format=[^&]*/,'format=interactive');
         }
-        s = s.replace(/([?&])w=\d+/g,'')
-             .replace(/([?&])h=\d+/g,'')
-             .replace(/&&/g,'&').replace(/\?&/,'?');
+        s = s.replace(/([?&])w=\d+/g,'').replace(/([?&])h=\d+/g,'').replace(/&&/g,'&').replace(/\?&/,'?');
         s += `&w=${w}&h=${h}`;
       }
-
-      // cache-buster muda a cada 60s
       s += (s.includes('?') ? '&' : '?') + `_=${cacheKey()}`;
       return s;
     }
-    // ------------------------------------------------------------------------
 
     function updateCountdownBadge(){ countEl.textContent = `⏳ ${left}s`; }
     function resetCountdown(){
@@ -186,6 +164,7 @@
     preset.onchange = applyPreset;
     customS.onchange = applyPreset;
 
+    // monta seletor usando SEMPRE a 2ª parte do nome
     items.forEach((it, i) => {
       const opt = document.createElement('option');
       opt.value = i;
