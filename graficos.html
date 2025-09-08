@@ -7,7 +7,6 @@
   <style>
     :root { --bg:#000; --fg:#fff; --glass:rgba(0,0,0,.55); }
     html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Arial,system-ui,sans-serif;overflow:hidden}
-    /* container do iframe para garantir centralização visual quando houver letterbox */
     .stage{position:fixed;inset:0;display:grid;place-items:center;background:#000}
     iframe{width:100vw;height:100vh;border:0;display:block}
 
@@ -32,7 +31,6 @@
     .badge{border:1px solid #6cf;color:#6cf;padding:4px 10px;border-radius:999px;font-size:12px}
     .timer{font-weight:600;opacity:.9;padding:4px 10px;border:1px solid #6cf;border-radius:999px}
 
-    /* Select escuro */
     select, input[type="number"]{
       color:#fff;background:#111;border:1px solid #aaa;border-radius:10px;
       padding:6px 12px;font-size:14px;outline-color:#6cf
@@ -44,13 +42,11 @@
     }
     option{background:#111;color:#fff}
 
-    /* Piscar 3x no título ao trocar */
     @keyframes blink3{0%,20%,40%,60%,80%,100%{opacity:1}10%,30%,50%,70%,90%{opacity:.15}}
     .blink3{animation:blink3 2.2s ease-in-out 1}
   </style>
 </head>
 <body>
-  <!-- topo só com o título -->
   <div class="topbar"><span id="title" class="title">Carregando…</span></div>
 
   <div class="stage">
@@ -65,7 +61,6 @@
 
     <span class="badge" id="pos">1/7</span>
 
-    <!-- Presets de tempo -->
     <label style="display:flex;gap:6px;align-items:center">
       ⏱️
       <select id="preset">
@@ -78,15 +73,12 @@
       <input id="customSec" type="number" min="5" step="5" value="60" style="width:90px;display:none" />
     </label>
 
-    <!-- seletor dos gráficos -->
     <select id="picker" title="Ir para…"></select>
-
-    <!-- ⏳ contador AGORA EMBAIXO, ao lado do menu -->
     <span class="timer" id="count">⏳ —</span>
   </div>
 
   <script>
-    // ====== TUA LISTA DE LINKS ======
+    // ====== TUA LISTA DE LINKS (mantida) ======
     const items = [
       { name: "Carta controle – TURBIDEZ",      src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
       { name: "Carta controle – CONDUTIVIDADE", src: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
@@ -115,24 +107,34 @@
       return parts.length > 1 ? parts[1].trim() : full.trim();
     }
 
-    // Mantém params corretos para pubhtml; se for pubchart, injeta w/h da tela
+    // --------- PATCH: cache-buster p/ não “congelar” título antigo ----------
+    const CACHE_TTL_S = 60;
+    const cacheKey = () => Math.floor(Date.now() / (CACHE_TTL_S * 1000));
+
     function sanitizeSrc(u){
       let s = String(u)
         .replace(/(\?|&)widget=false/,'$1widget=true')
         .replace(/(\?|&)headers=true/,'$1headers=false');
+
       if (s.includes('/pubchart')){
         const w = Math.max(640, window.innerWidth);
         const h = Math.max(360, window.innerHeight);
         if (!/([?&])format=interactive(\b|&)/.test(s)){
-          s += (s.includes('?')?'&':'?') + 'format=interactive';
+          s += (s.includes('?') ? '&' : '?') + 'format=interactive';
         } else {
           s = s.replace(/format=[^&]*/,'format=interactive');
         }
-        s = s.replace(/([?&])w=\d+/g,'').replace(/([?&])h=\d+/g,'').replace(/&&/g,'&').replace(/\?&/,'?');
+        s = s.replace(/([?&])w=\d+/g,'')
+             .replace(/([?&])h=\d+/g,'')
+             .replace(/&&/g,'&').replace(/\?&/,'?');
         s += `&w=${w}&h=${h}`;
       }
+
+      // cache-buster muda a cada 60s
+      s += (s.includes('?') ? '&' : '?') + `_=${cacheKey()}`;
       return s;
     }
+    // ------------------------------------------------------------------------
 
     function updateCountdownBadge(){ countEl.textContent = `⏳ ${left}s`; }
     function resetCountdown(){
@@ -184,7 +186,6 @@
     preset.onchange = applyPreset;
     customS.onchange = applyPreset;
 
-    // Popular seletor
     items.forEach((it, i) => {
       const opt = document.createElement('option');
       opt.value = i;
@@ -192,7 +193,6 @@
       picker.appendChild(opt);
     });
 
-    // Eventos
     document.getElementById('prev').onclick = prev;
     document.getElementById('next').onclick = next;
     playBtn.onclick = play;
@@ -206,18 +206,15 @@
       else if(ev.key==='-'){ secs = Math.max(5, secs-10);  (preset.value!=='custom')&&(preset.value='custom'); customS.style.display='inline-block'; customS.value=secs; if(timer)startTimer(); else{left=secs;updateCountdownBadge();}}
     });
 
-    // Reajusta pubchart quando redimensionar
     let rsz;
     window.addEventListener('resize', ()=>{
       clearTimeout(rsz);
       rsz = setTimeout(()=>{ frame.src = sanitizeSrc(items[idx].src); }, 200);
     });
 
-    // Restaura último tempo
     const saved = Number(localStorage.getItem('h2o_secs'));
     if(saved && saved>=5){ secs = saved; customS.value = saved; preset.value='custom'; customS.style.display='inline-block'; }
 
-    // Start
     load(0);
   </script>
 </body>
