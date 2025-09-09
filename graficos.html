@@ -9,35 +9,51 @@
       --bg:#0b0b0d; --fg:#e9eef3; --muted:#9aa4ad; --glass:rgba(255,255,255,.06);
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
       font:500 15px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
-      padding-bottom:72px;
+      padding-bottom:72px; /* espaço pro menu fixo */
     }
-    .bar{display:flex;align-items:center;gap:14px;padding:12px 18px;
+    .bar{
+      display:flex; align-items:center; gap:14px; padding:12px 18px;
       background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
-      border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:3;}
-    .title{font-weight:700;letter-spacing:.3px}
-    .title .small{color:var(--muted);font-weight:600;margin-left:8px}
+      border-bottom:1px solid rgba(255,255,255,.08);
+      position:sticky; top:0; z-index:3;
+    }
+    .title{font-weight:700; letter-spacing:.3px}
+    .title .small{color:var(--muted); font-weight:600; margin-left:8px}
     .blink3{animation:blink3 .9s ease-in-out 3}
-    @keyframes blink3{0%,100%{opacity:1}50%{opacity:.15}}
+    @keyframes blink3{0%,100%{opacity:1} 50%{opacity:.15}}
     .spacer{flex:1}
-    .wrap{max-width:1180px;margin:0 auto;padding:10px 16px}
-    .frame-box{background:var(--glass);border:1px solid rgba(255,255,255,.08);
-      border-radius:14px;overflow:visible;box-shadow:0 10px 30px rgba(0,0,0,.25);
-      min-height:70vh;display:flex;align-items:stretch;justify-content:center;}
-    iframe{width:100%;height:78vh;border:0;background:#fff}
-    .controls{position:fixed;left:0;right:0;bottom:0;z-index:9999;
-      display:flex;gap:10px;align-items:center;justify-content:center;
-      padding:10px;background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.35));
-      border-top:1px solid rgba(255,255,255,.08);}
-    .btn{background:var(--glass);border:1px solid rgba(255,255,255,.14);
-      color:var(--fg);padding:8px 12px;border-radius:999px;cursor:pointer;
-      font-weight:600;min-width:84px;}
-    .btn.active{background:rgba(77,163,255,.15);border-color:rgba(77,163,255,.4)}
-    .pill{padding:6px 10px;background:var(--glass);border-radius:999px;
-      border:1px solid rgba(255,255,255,.12)}
-    select{background:transparent;color:var(--fg);border:0;font-weight:600;outline:none}
-    .counter{color:var(--muted);font-weight:700}
+    .wrap{max-width:1180px; margin:0 auto; padding:10px 16px}
+    .frame-box{
+      background:var(--glass); border:1px solid rgba(255,255,255,.08);
+      border-radius:14px; overflow:visible;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+      min-height:70vh; display:flex; align-items:stretch; justify-content:center;
+    }
+    /* ocupa a altura da janela menos topbar e controles */
+    iframe{
+      width:100%;
+      height:calc(100vh - 56px - 84px); /* ajuste fino se precisar */
+      border:0; background:#fff;
+    }
+    .controls{
+      position:fixed; left:0; right:0; bottom:0; z-index:9999;
+      display:flex; gap:10px; align-items:center; justify-content:center;
+      padding:10px;
+      background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.35));
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+    .btn{
+      background:var(--glass); border:1px solid rgba(255,255,255,.14);
+      color:var(--fg); padding:8px 12px; border-radius:999px; cursor:pointer;
+      font-weight:600; min-width:84px;
+    }
+    .btn.active{background:rgba(77,163,255,.15); border-color:rgba(77,163,255,.4)}
+    .pill{padding:6px 10px; background:var(--glass); border-radius:999px; border:1px solid rgba(255,255,255,.12)}
+    select{background:transparent; color:var(--fg); border:0; font-weight:600; outline:none}
+    .counter{color:var(--muted); font-weight:700}
   </style>
 </head>
 <body>
@@ -51,7 +67,7 @@
 
   <div class="wrap">
     <div class="frame-box">
-      <iframe id="viewer" src="about:blank" loading="eager" referrerpolicy="no-referrer"></iframe>
+      <iframe id="viewer" src="about:blank" loading="eager" referrerpolicy="no-referrer" scrolling="no"></iframe>
     </div>
   </div>
 
@@ -59,7 +75,9 @@
     <button class="btn" id="prevBtn">← Anterior</button>
     <button class="btn active" id="playBtn">⏵ Play</button>
     <button class="btn" id="nextBtn">Próximo →</button>
+
     <span class="pill"><span id="idxPill">—</span></span>
+
     <span class="pill">
       <select id="speedSel">
         <option value="30000">30s</option>
@@ -68,59 +86,83 @@
         <option value="120000">120s</option>
       </select>
     </span>
+
     <span class="pill">
       <select id="grupoSel"><option value="todos" selected>TODOS</option></select>
     </span>
   </div>
 
   <script>
+    /* 
+      🔗 Teus painéis publicados no Sheets (pubhtml)
+      👉 Usa "label" para garantir que o título mostre exatamente o que tu quer.
+      Se "label" faltar, o código tenta extrair do "nome" (parte depois do traço).
+    */
     const PAINEIS = [
-      { nome: "Carta controle - PH4", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSEMAALnRRAdgtTfumRNyxVpMdWhqBJECe_CClCFWLDCQamHm36oYw_dKhL3shrL9XbwT6GZMjYpXYu/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { nome: "Carta controle - PH7", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vTooEo0R432lzvG_qcCtcuvJZqpHe3RylZ2tUvIMb5PtcrU1eJt3JTPNuA75_Fb91VsGg8-mAL-cc7m/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { nome: "Carta controle - PH10", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vR7_mU1lYCuIwEQVMY2S4iXF64KONUmAPGljssIzs8BN756TuoiqjCNgirmkKZdFbjEpob8Er6a3wfj/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { nome: "Carta controle - CLORETOS", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { nome: "Carta controle - TURBIDEZ", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vST8sCupvmxTYk0fnzZFQmFQwo0RGNo4JaVMlqvSHcj3CtBwH6SOkNW4HkR-K-S4mP4IdVGWXn8ofiP/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { nome: "Carta controle - DUREZA", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vS_XduoLKR53GrUo2Hr8NKC0V3EWJhmKaixuoo8_wi2acWPfntklPrQiJUnAumFcVm7O4Ja_UjXHivG/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { nome: "Carta controle - CONDUTIVIDADE", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false"}
+      { label: "PH7",  nome: "Carta controle - PH7",  src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSEMAALnRRAdgtTfumRNyxVpMdWhqBJECe_CClCFWLDCQamHm36oYw_dKhL3shrL9XbwT6GZMjYpXYu/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { label: "PH4",  nome: "Carta controle - PH4",  src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vTooEo0R432lzvG_qcCtcuvJZqpHe3RylZ2tUvIMb5PtcrU1eJt3JTPNuA75_Fb91VsGg8-mAL-cc7m/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { label: "PH10", nome: "Carta controle - PH10", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vR7_mU1lYCuIwEQVMY2S4iXF64KONUmAPGljssIzs8BN756TuoiqjCNgirmkKZdFbjEpob8Er6a3wfj/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { label: "CLORETOS", nome: "Carta controle - CLORETOS", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { label: "TURBIDEZ", nome: "Carta controle - TURBIDEZ", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vST8sCupvmxTYk0fnzZFQmFQwo0RGNo4JaVMlqvSHcj3CtBwH6SOkNW4HkR-K-S4mP4IdVGWXn8ofiP/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { label: "DUREZA",   nome: "Carta controle - DUREZA",   src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vS_XduoLKR53GrUo2Hr8NKC0V3EWJhmKaixuoo8_wi2acWPfntklPrQiJUnAumFcVm7O4Ja_UjXHivG/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { label: "CONDUTIVIDADE", nome: "Carta controle - CONDUTIVIDADE", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false"}
     ];
 
-    function deriveTitleFrom(txt){
-      if(!txt) return "SEM TÍTULO";
-      const parts = txt.split(/\s*[–-]\s*/);
-      return (parts.pop() || txt).trim().toUpperCase();
+    function deriveTitleFromName(nome){
+      if(!nome) return "SEM TÍTULO";
+      const parts = String(nome).split(/\s*[–-]\s*/);
+      return (parts.pop() || nome).trim().toUpperCase();
     }
 
-    const viewer=document.getElementById('viewer');
-    const barTitle=document.getElementById('barTitle');
-    const barSubtitle=document.getElementById('barSubtitle');
-    const counter=document.getElementById('counter');
-    const idxPill=document.getElementById('idxPill');
-    const speedSel=document.getElementById('speedSel');
-    const playBtn=document.getElementById('playBtn');
-    const prevBtn=document.getElementById('prevBtn');
-    const nextBtn=document.getElementById('nextBtn');
+    // DOM
+    const viewer   = document.getElementById('viewer');
+    const barTitle = document.getElementById('barTitle');
+    const barSub   = document.getElementById('barSubtitle');
+    const counter  = document.getElementById('counter');
+    const idxPill  = document.getElementById('idxPill');
+    const speedSel = document.getElementById('speedSel');
+    const playBtn  = document.getElementById('playBtn');
+    const prevBtn  = document.getElementById('prevBtn');
+    const nextBtn  = document.getElementById('nextBtn');
 
-    let i=0,timer=null;
+    let i=0, timer=null;
+
+    function tituloAt(i){
+      const it = PAINEIS[i];
+      return (it.label || deriveTitleFromName(it.nome)).toUpperCase();
+    }
+
     function updateBar(){
-      counter.textContent=`${i+1}/${PAINEIS.length}`;
-      idxPill.textContent=counter.textContent;
-      const titulo=deriveTitleFrom(PAINEIS[i].nome);
-      barTitle.textContent=titulo;
-      barTitle.classList.remove('blink3');void barTitle.offsetWidth;
-      barTitle.classList.add('blink3');
-      barSubtitle.textContent=`Carta de Controle – ${titulo}`;
+      const total = PAINEIS.length;
+      counter.textContent = `${i+1}/${total}`;
+      if (idxPill) idxPill.textContent = counter.textContent;
+      const t = tituloAt(i);
+      barTitle.textContent = t;
+      barTitle.classList.remove('blink3'); void barTitle.offsetWidth; barTitle.classList.add('blink3');
+      barSub.textContent = `Carta de Controle – ${t}`;
     }
-    function show(idx){i=((idx%PAINEIS.length)+PAINEIS.length)%PAINEIS.length;
-      viewer.src=PAINEIS[i].src;updateBar();}
-    function play(){stop();playBtn.classList.add('active');
-      timer=setInterval(()=>next(),parseInt(speedSel.value,10)||60000);}
-    function stop(){playBtn.classList.remove('active');if(timer){clearInterval(timer);timer=null;}}
-    function togglePlay(){timer?stop():play();}
-    function prev(){show(i-1);} function next(){show(i+1);}
-    playBtn.addEventListener('click',togglePlay);
-    prevBtn.addEventListener('click',prev);
-    nextBtn.addEventListener('click',next);
-    speedSel.addEventListener('change',()=>{if(timer)play();});
+
+    function show(idx){
+      i = ((idx % PAINEIS.length) + PAINEIS.length) % PAINEIS.length;
+      viewer.src = PAINEIS[i].src;
+      updateBar();
+    }
+
+    function play(){ stop(); playBtn.classList.add('active');
+      const ms = parseInt(speedSel.value,10) || 60000;
+      timer = setInterval(next, ms);
+    }
+    function stop(){ playBtn.classList.remove('active'); if(timer){clearInterval(timer); timer=null;} }
+    function togglePlay(){ timer ? stop() : play(); }
+    function prev(){ show(i-1); }
+    function next(){ show(i+1); }
+
+    playBtn.addEventListener('click', togglePlay);
+    prevBtn.addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+    speedSel.addEventListener('change', () => { if(timer) play(); });
+
+    // start
     show(0); play();
   </script>
 </body>
