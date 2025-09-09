@@ -12,7 +12,7 @@
     body{
       margin:0; background:var(--bg); color:var(--fg);
       font:500 15px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
-      padding-bottom:72px; /* espaço pro menu fixo */
+      padding-bottom:92px; /* espaço pro menu fixo */
     }
     .bar{
       display:flex; align-items:center; gap:14px; padding:12px 18px;
@@ -32,10 +32,9 @@
       box-shadow:0 10px 30px rgba(0,0,0,.25);
       min-height:70vh; display:flex; align-items:stretch; justify-content:center;
     }
-    /* ocupa a altura da janela menos topbar e controles */
     iframe{
       width:100%;
-      height:calc(100vh - 56px - 84px); /* ajuste fino se precisar */
+      height:calc(100vh - 56px - 104px); /* topo + rodapé fixo */
       border:0; background:#fff;
     }
     .controls{
@@ -44,6 +43,7 @@
       padding:10px;
       background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.35));
       border-top:1px solid rgba(255,255,255,.08);
+      flex-wrap:wrap;
     }
     .btn{
       background:var(--glass); border:1px solid rgba(255,255,255,.14);
@@ -90,31 +90,54 @@
     <span class="pill">
       <select id="grupoSel"><option value="todos" selected>TODOS</option></select>
     </span>
+
+    <!-- 🔧 NOVO: seletor para corrigir/forçar o nome do painel atual -->
+    <span class="pill">
+      <select id="titleSel" title="Nome do painel atual">
+        <option value="__AUTO__">AUTO (do nome)</option>
+        <option>PH4</option>
+        <option>PH7</option>
+        <option>PH10</option>
+        <option>CLORETOS</option>
+        <option>TURBIDEZ</option>
+        <option>DUREZA</option>
+        <option>CONDUTIVIDADE</option>
+      </select>
+    </span>
   </div>
 
   <script>
-    /* 
-      🔗 Teus painéis publicados no Sheets (pubhtml)
-      👉 Usa "label" para garantir que o título mostre exatamente o que tu quer.
-      Se "label" faltar, o código tenta extrair do "nome" (parte depois do traço).
-    */
+    /* === Tua lista de painéis (links pubhtml) === */
     const PAINEIS = [
-      { label: "PH7",  nome: "Carta controle - PH7",  src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSEMAALnRRAdgtTfumRNyxVpMdWhqBJECe_CClCFWLDCQamHm36oYw_dKhL3shrL9XbwT6GZMjYpXYu/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { label: "PH4",  nome: "Carta controle - PH4",  src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vTooEo0R432lzvG_qcCtcuvJZqpHe3RylZ2tUvIMb5PtcrU1eJt3JTPNuA75_Fb91VsGg8-mAL-cc7m/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { label: "PH10", nome: "Carta controle - PH10", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vR7_mU1lYCuIwEQVMY2S4iXF64KONUmAPGljssIzs8BN756TuoiqjCNgirmkKZdFbjEpob8Er6a3wfj/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { label: "CLORETOS", nome: "Carta controle - CLORETOS", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { label: "TURBIDEZ", nome: "Carta controle - TURBIDEZ", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vST8sCupvmxTYk0fnzZFQmFQwo0RGNo4JaVMlqvSHcj3CtBwH6SOkNW4HkR-K-S4mP4IdVGWXn8ofiP/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { label: "DUREZA",   nome: "Carta controle - DUREZA",   src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vS_XduoLKR53GrUo2Hr8NKC0V3EWJhmKaixuoo8_wi2acWPfntklPrQiJUnAumFcVm7O4Ja_UjXHivG/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
-      { label: "CONDUTIVIDADE", nome: "Carta controle - CONDUTIVIDADE", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false"}
+      { nome: "Carta controle - PH7",  src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSEMAALnRRAdgtTfumRNyxVpMdWhqBJECe_CClCFWLDCQamHm36oYw_dKhL3shrL9XbwT6GZMjYpXYu/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - PH4",  src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vTooEo0R432lzvG_qcCtcuvJZqpHe3RylZ2tUvIMb5PtcrU1eJt3JTPNuA75_Fb91VsGg8-mAL-cc7m/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - PH10", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vR7_mU1lYCuIwEQVMY2S4iXF64KONUmAPGljssIzs8BN756TuoiqjCNgirmkKZdFbjEpob8Er6a3wfj/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - CLORETOS", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - TURBIDEZ", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vST8sCupvmxTYk0fnzZFQmFQwo0RGNo4JaVMlqvSHcj3CtBwH6SOkNW4HkR-K-S4mP4IdVGWXn8ofiP/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - DUREZA",   src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vS_XduoLKR53GrUo2Hr8NKC0V3EWJhmKaixuoo8_wi2acWPfntklPrQiJUnAumFcVm7O4Ja_UjXHivG/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - CONDUTIVIDADE", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false"}
     ];
 
-    function deriveTitleFromName(nome){
+    /* === Persistência de nomes por link (src) === */
+    const STORE_KEY = "panelTitles_v1"; // src -> título forçado
+    let titleOverrides = {};
+    try { titleOverrides = JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch(e){ titleOverrides = {}; }
+
+    function saveOverride(src, titleOrNull){
+      if (!src) return;
+      if (!titleOverrides) titleOverrides = {};
+      if (!titleOrNull || titleOrNull === "__AUTO__") delete titleOverrides[src];
+      else titleOverrides[src] = titleOrNull;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(titleOverrides)); } catch(e){}
+    }
+
+    function deriveFromName(nome){
       if(!nome) return "SEM TÍTULO";
       const parts = String(nome).split(/\s*[–-]\s*/);
       return (parts.pop() || nome).trim().toUpperCase();
     }
 
-    // DOM
+    /* === DOM === */
     const viewer   = document.getElementById('viewer');
     const barTitle = document.getElementById('barTitle');
     const barSub   = document.getElementById('barSubtitle');
@@ -124,27 +147,35 @@
     const playBtn  = document.getElementById('playBtn');
     const prevBtn  = document.getElementById('prevBtn');
     const nextBtn  = document.getElementById('nextBtn');
+    const titleSel = document.getElementById('titleSel');
 
     let i=0, timer=null;
 
-    function tituloAt(i){
-      const it = PAINEIS[i];
-      return (it.label || deriveTitleFromName(it.nome)).toUpperCase();
+    function current(){ return PAINEIS[i]; }
+    function currentTitle(){
+      const it = current();
+      return (titleOverrides[it.src] || deriveFromName(it.nome)).toUpperCase();
     }
 
     function updateBar(){
       const total = PAINEIS.length;
       counter.textContent = `${i+1}/${total}`;
       if (idxPill) idxPill.textContent = counter.textContent;
-      const t = tituloAt(i);
+
+      const t = currentTitle();
       barTitle.textContent = t;
       barTitle.classList.remove('blink3'); void barTitle.offsetWidth; barTitle.classList.add('blink3');
       barSub.textContent = `Carta de Controle – ${t}`;
+
+      // Atualiza o seletor de nome conforme override
+      const it = current();
+      const forced = titleOverrides[it.src];
+      titleSel.value = forced ? forced : "__AUTO__";
     }
 
     function show(idx){
       i = ((idx % PAINEIS.length) + PAINEIS.length) % PAINEIS.length;
-      viewer.src = PAINEIS[i].src;
+      viewer.src = current().src;
       updateBar();
     }
 
@@ -161,6 +192,13 @@
     prevBtn.addEventListener('click', prev);
     nextBtn.addEventListener('click', next);
     speedSel.addEventListener('change', () => { if(timer) play(); });
+
+    // 🔧 Força/ajusta o nome do painel atual
+    titleSel.addEventListener('change', () => {
+      const it = current();
+      saveOverride(it.src, titleSel.value);
+      updateBar();
+    });
 
     // start
     show(0); play();
