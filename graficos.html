@@ -7,47 +7,37 @@
   <style>
     :root{
       --bg:#0b0b0d; --fg:#e9eef3; --muted:#9aa4ad; --glass:rgba(255,255,255,.06);
-      --accent:#4da3ff; --accent-2:#7bd389; --danger:#ff6b6b;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
-    .bar{
-      display:flex;align-items:center;gap:14px; padding:12px 18px;
-      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
-      border-bottom:1px solid rgba(255,255,255,.08); position:sticky; top:0; z-index:3;
+    body{margin:0;background:var(--bg);color:var(--fg);
+      font:500 15px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
+      padding-bottom:72px;
     }
-    .title{font-weight:700; letter-spacing:.3px}
-    .title .small{color:var(--muted); font-weight:600; margin-left:8px}
+    .bar{display:flex;align-items:center;gap:14px;padding:12px 18px;
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+      border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:3;}
+    .title{font-weight:700;letter-spacing:.3px}
+    .title .small{color:var(--muted);font-weight:600;margin-left:8px}
     .blink3{animation:blink3 .9s ease-in-out 3}
-    @keyframes blink3{0%,100%{opacity:1} 50%{opacity:.15}}
+    @keyframes blink3{0%,100%{opacity:1}50%{opacity:.15}}
     .spacer{flex:1}
     .wrap{max-width:1180px;margin:0 auto;padding:10px 16px}
-    .frame-box{
-      background:var(--glass); border:1px solid rgba(255,255,255,.08);
-      border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      min-height:70vh; display:flex; align-items:stretch; justify-content:center;
-    }
-    iframe{width:100%; height:78vh; border:0; background:#fff}
-    .controls{
-      position:sticky; bottom:0; z-index:3;
-      display:flex; gap:10px; align-items:center; justify-content:center;
-      padding:10px; background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.35));
-      border-top:1px solid rgba(255,255,255,.08);
-    }
-    .btn{
-      background:var(--glass); border:1px solid rgba(255,255,255,.14);
-      color:var(--fg); padding:8px 12px; border-radius:999px; cursor:pointer;
-      font-weight:600; min-width:84px; transition:transform .06s ease, background .2s ease;
-    }
-    .btn:hover{transform:translateY(-1px)}
-    .btn.active{background:rgba(77,163,255,.15); border-color:rgba(77,163,255,.4)}
-    .pill{padding:6px 10px; background:var(--glass); border-radius:999px; border:1px solid rgba(255,255,255,.12)}
-    select{background:transparent; color:var(--fg); border:0; font-weight:600; outline:none}
-    .counter{color:var(--muted); font-weight:700}
-    @media (max-width:900px){
-      iframe{height:72vh}
-      .btn{min-width:64px;padding:8px 10px}
-    }
+    .frame-box{background:var(--glass);border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;overflow:visible;box-shadow:0 10px 30px rgba(0,0,0,.25);
+      min-height:70vh;display:flex;align-items:stretch;justify-content:center;}
+    iframe{width:100%;height:78vh;border:0;background:#fff}
+    .controls{position:fixed;left:0;right:0;bottom:0;z-index:9999;
+      display:flex;gap:10px;align-items:center;justify-content:center;
+      padding:10px;background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.35));
+      border-top:1px solid rgba(255,255,255,.08);}
+    .btn{background:var(--glass);border:1px solid rgba(255,255,255,.14);
+      color:var(--fg);padding:8px 12px;border-radius:999px;cursor:pointer;
+      font-weight:600;min-width:84px;}
+    .btn.active{background:rgba(77,163,255,.15);border-color:rgba(77,163,255,.4)}
+    .pill{padding:6px 10px;background:var(--glass);border-radius:999px;
+      border:1px solid rgba(255,255,255,.12)}
+    select{background:transparent;color:var(--fg);border:0;font-weight:600;outline:none}
+    .counter{color:var(--muted);font-weight:700}
   </style>
 </head>
 <body>
@@ -69,157 +59,69 @@
     <button class="btn" id="prevBtn">← Anterior</button>
     <button class="btn active" id="playBtn">⏵ Play</button>
     <button class="btn" id="nextBtn">Próximo →</button>
-
     <span class="pill"><span id="idxPill">—</span></span>
-
     <span class="pill">
-      <select id="speedSel" aria-label="Velocidade">
+      <select id="speedSel">
         <option value="30000">30s</option>
         <option value="60000" selected>60s</option>
         <option value="90000">90s</option>
         <option value="120000">120s</option>
       </select>
     </span>
-
     <span class="pill">
-      <select id="grupoSel" aria-label="Grupo">
-        <option value="todos" selected>TODOS</option>
-        <!-- mantém para futuro (se quiser filtrar por grupo) -->
-      </select>
+      <select id="grupoSel"><option value="todos" selected>TODOS</option></select>
     </span>
   </div>
 
   <script>
-    /* ============================================================
-       🔧 CONFIGURA TUAS FONTES AQUI (se já tens no teu script, mantém)
-       Cada item pode ter:
-       - nome: o texto como está no Drive/GitHub (ex.: "Carta controle - TURBIDEZ")
-       - src : a URL publicada (iframe/planilha/gráfico/imagem)
-       👉 O título mostrado será sempre a **parte depois do traço** de `nome` (ou da própria URL se nome não vier).
-       ============================================================ */
     const PAINEIS = [
-      // EXEMPLOS — substitui pelos teus (ou deixa que já funciona com os que tiverem aí):
-      { nome: "Carta controle - PH4",      src: "https://docs.google.com/spreadsheets/d/e/2PACX-EXEMPLO/pubhtml?gid=1&single=true" },
-      { nome: "Carta controle - PH7",      src: "https://docs.google.com/spreadsheets/d/e/2PACX-EXEMPLO/pubhtml?gid=2&single=true" },
-      { nome: "Carta controle - PH10",     src: "https://docs.google.com/spreadsheets/d/e/2PACX-EXEMPLO/pubhtml?gid=3&single=true" },
-      { nome: "Carta controle - CLORETOS", src: "https://docs.google.com/spreadsheets/d/e/2PACX-EXEMPLO/pubhtml?gid=4&single=true" },
-      { nome: "Carta controle - TURBIDEZ", src: "https://docs.google.com/spreadsheets/d/e/2PACX-EXEMPLO/pubhtml?gid=5&single=true" },
-      { nome: "Carta controle - DUREZA",   src: "https://docs.google.com/spreadsheets/d/e/2PACX-EXEMPLO/pubhtml?gid=6&single=true" },
-      // …podes ter quantos quiseres
+      { nome: "Carta controle - PH4", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSEMAALnRRAdgtTfumRNyxVpMdWhqBJECe_CClCFWLDCQamHm36oYw_dKhL3shrL9XbwT6GZMjYpXYu/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - PH7", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vTooEo0R432lzvG_qcCtcuvJZqpHe3RylZ2tUvIMb5PtcrU1eJt3JTPNuA75_Fb91VsGg8-mAL-cc7m/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - PH10", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vR7_mU1lYCuIwEQVMY2S4iXF64KONUmAPGljssIzs8BN756TuoiqjCNgirmkKZdFbjEpob8Er6a3wfj/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - CLORETOS", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2-8_POxVglZ4FvAb8Drgs3-5oSpW0WIbZ_neHLYmcPg9UN3P98z1EVj39dA7F_wI7XkwlujaRN7D6/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - TURBIDEZ", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vST8sCupvmxTYk0fnzZFQmFQwo0RGNo4JaVMlqvSHcj3CtBwH6SOkNW4HkR-K-S4mP4IdVGWXn8ofiP/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - DUREZA", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vS_XduoLKR53GrUo2Hr8NKC0V3EWJhmKaixuoo8_wi2acWPfntklPrQiJUnAumFcVm7O4Ja_UjXHivG/pubhtml?gid=153412780&single=true&widget=true&headers=false"},
+      { nome: "Carta controle - CONDUTIVIDADE", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false"}
     ];
 
-    /* ============================================================
-       🧠 Função que EXTRAI o título correto (depois do traço)
-       - Aceita “ - ” ou “ – ” (traço normal ou en-dash)
-       - Se não houver nome, tenta deduzir do arquivo na URL
-       - Remove extensão (.csv, .png, etc) e espaços extras
-       ============================================================ */
-    function deriveTitleFrom(anyStringOrUrl){
-      if(!anyStringOrUrl) return "SEM TÍTULO";
-      let s = decodeURIComponent(String(anyStringOrUrl)).trim();
-
-      // Se veio URL, fica só com o final do caminho
-      if (/^https?:\/\//i.test(s)) {
-        s = s.replace(/^.*\//, '');               // pega só o último segmento
-        s = s.replace(/\?.*$/, '').replace(/#.*$/,''); // sem query/hash
-      }
-
-      // Tira extensão
-      s = s.replace(/\.[a-z0-9]{1,6}$/i, '');
-
-      // Quebra por “-” ou “–”
-      const parts = s.split(/\s*[–-]\s*/);
-      const last = parts[parts.length - 1];
-
-      return (last || s).toUpperCase().trim();
+    function deriveTitleFrom(txt){
+      if(!txt) return "SEM TÍTULO";
+      const parts = txt.split(/\s*[–-]\s*/);
+      return (parts.pop() || txt).trim().toUpperCase();
     }
 
-    // Se tiveres um campo "grupo" nos teus itens, podes filtrar aqui:
-    function getActiveList(){
-      // por enquanto retorna todos
-      return PAINEIS.slice();
-    }
+    const viewer=document.getElementById('viewer');
+    const barTitle=document.getElementById('barTitle');
+    const barSubtitle=document.getElementById('barSubtitle');
+    const counter=document.getElementById('counter');
+    const idxPill=document.getElementById('idxPill');
+    const speedSel=document.getElementById('speedSel');
+    const playBtn=document.getElementById('playBtn');
+    const prevBtn=document.getElementById('prevBtn');
+    const nextBtn=document.getElementById('nextBtn');
 
-    /* =========================
-       🎛️ Navegação e Rotação
-       ========================= */
-    const viewer = document.getElementById('viewer');
-    const barTitle = document.getElementById('barTitle');
-    const barSubtitle = document.getElementById('barSubtitle');
-    const counter = document.getElementById('counter');
-    const idxPill = document.getElementById('idxPill');
-    const speedSel = document.getElementById('speedSel');
-    const playBtn = document.getElementById('playBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    let list = getActiveList();
-    let i = 0;
-    let timer = null;
-
+    let i=0,timer=null;
     function updateBar(){
-      const total = list.length;
-      counter.textContent = `${i+1}/${total}`;
-      idxPill.textContent = counter.textContent;
-
-      // Título grande = “CONDUTIVIDADE (2/7)” ou o que preferir
-      // Aqui mantenho “Carta de Controle – NOME” no subtítulo e mostra o índice no topo.
-      const tituloMaior = deriveTitleFrom(list[i].nome || list[i].src);
-      barTitle.textContent = tituloMaior;
-      barTitle.classList.remove('blink3'); // reinicia o efeito de “piscar 3x”
-      void barTitle.offsetWidth;           // reflow para permitir re-animar
+      counter.textContent=`${i+1}/${PAINEIS.length}`;
+      idxPill.textContent=counter.textContent;
+      const titulo=deriveTitleFrom(PAINEIS[i].nome);
+      barTitle.textContent=titulo;
+      barTitle.classList.remove('blink3');void barTitle.offsetWidth;
       barTitle.classList.add('blink3');
-
-      barSubtitle.textContent = `Carta de Controle – ${tituloMaior}`;
+      barSubtitle.textContent=`Carta de Controle – ${titulo}`;
     }
-
-    function show(idx){
-      if (!list.length) return;
-      i = ((idx % list.length) + list.length) % list.length;
-      viewer.src = list[i].src;
-      updateBar();
-    }
-
-    function play(){
-      stop();
-      playBtn.classList.add('active');
-      const ms = parseInt(speedSel.value, 10) || 60000;
-      timer = setInterval(() => next(), ms);
-    }
-    function stop(){
-      playBtn.classList.remove('active');
-      if (timer) { clearInterval(timer); timer = null; }
-    }
-    function togglePlay(){
-      if (timer) stop(); else play();
-    }
-    function prev(){ show(i-1); }
-    function next(){ show(i+1); }
-
-    // Eventos
-    playBtn.addEventListener('click', togglePlay);
-    prevBtn.addEventListener('click', prev);
-    nextBtn.addEventListener('click', next);
-    speedSel.addEventListener('change', () => { if (timer) play(); });
-
-    // Inicialização
-    list = getActiveList();
-    if (!list.length){
-      viewer.srcdoc = "<div style='padding:24px;font:16px sans-serif'>Nenhum painel configurado.</div>";
-    } else {
-      show(0);
-      play(); // inicia rodando como está no teu painel
-    }
-
-    /* ===========================================
-       💡 Caso tu já tenha uma lista própria no JS:
-       - Mantém tua estrutura/estilos e substitui APENAS:
-         1) a função deriveTitleFrom() (igual acima)
-         2) onde defines o texto do título, usa:
-              const titulo = deriveTitleFrom(nomeOuUrl);
-              barTitle.textContent = titulo;
-              barSubtitle.textContent = `Carta de Controle – ${titulo}`;
-       =========================================== */
+    function show(idx){i=((idx%PAINEIS.length)+PAINEIS.length)%PAINEIS.length;
+      viewer.src=PAINEIS[i].src;updateBar();}
+    function play(){stop();playBtn.classList.add('active');
+      timer=setInterval(()=>next(),parseInt(speedSel.value,10)||60000);}
+    function stop(){playBtn.classList.remove('active');if(timer){clearInterval(timer);timer=null;}}
+    function togglePlay(){timer?stop():play();}
+    function prev(){show(i-1);} function next(){show(i+1);}
+    playBtn.addEventListener('click',togglePlay);
+    prevBtn.addEventListener('click',prev);
+    nextBtn.addEventListener('click',next);
+    speedSel.addEventListener('change',()=>{if(timer)play();});
+    show(0); play();
   </script>
 </body>
 </html>
