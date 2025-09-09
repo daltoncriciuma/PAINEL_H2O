@@ -13,7 +13,7 @@
     body{
       margin:0;background:var(--bg);color:var(--fg);
       font:500 15px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
-      padding-bottom:104px; /* espaço pro rodapé fixo */
+      padding-bottom:104px;
     }
     .bar{
       display:flex;align-items:center;gap:14px;padding:12px 18px;
@@ -59,13 +59,12 @@
     .pill .value{color:var(--fg);font-weight:700;letter-spacing:.3px}
     select{
       appearance:none;-webkit-appearance:none;-moz-appearance:none;
-      background:transparent;color:var(--fg);border:0;font-weight:600;outline:none;padding-right:18px
+      background:var(--bg);color:var(--fg);border:1px solid var(--stroke);
+      font-weight:600;outline:none;padding:4px 22px 4px 10px;
+      border-radius:999px;
     }
+    select:focus{outline:2px solid rgba(77,163,255,.6)}
     .counter{color:var(--muted);font-weight:700}
-    @media (max-width:900px){
-      iframe{height:calc(100vh - 56px - 136px)}
-      .btn{min-width:64px;padding:8px 10px}
-    }
   </style>
 </head>
 <body>
@@ -91,7 +90,6 @@
 
     <span class="pill"><span id="idxPill">—</span></span>
 
-    <!-- Velocidade + contador regressivo -->
     <span class="pill">
       <span class="label">Veloc.</span>
       <select id="speedSel">
@@ -104,13 +102,7 @@
       <span class="value" id="countdown">T-60s</span>
     </span>
 
-    <!-- Grupo fica fixo -->
-    <span class="pill">
-      <span class="label">Grupo</span>
-      <span class="value">TODOS</span>
-    </span>
-
-    <!-- Novo: menu de páginas -->
+    <!-- 🔧 Menu de páginas com fundo dark -->
     <span class="pill">
       <span class="label">Painel</span>
       <select id="panelSel"></select>
@@ -118,7 +110,6 @@
   </div>
 
   <script>
-    /* Mapeamento (PH4/PH10 corrigidos) */
     const PAINEIS = [
       { label:"PH7",  src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSEMAALnRRAdgtTfumRNyxVpMdWhqBJECe_CClCFWLDCQamHm36oYw_dKhL3shrL9XbwT6GZMjYpXYu/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
       { label:"PH10", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vTooEo0R432lzvG_qcCtcuvJZqpHe3RylZ2tUvIMb5PtcrU1eJt3JTPNuA75_Fb91VsGg8-mAL-cc7m/pubhtml?gid=153412780&single=true&widget=true&headers=false" },
@@ -129,7 +120,6 @@
       { label:"CONDUTIVIDADE", src:"https://docs.google.com/spreadsheets/d/e/2PACX-1vRunBIWfAWUAQaQLbbgzmmwD8NYsXUFbgENydEMEj2Woqhln0S2AKFOdmEnJuJ3HTU9_vQuSokaOK0l/pubhtml?gid=153412780&single=true&widget=true&headers=false" }
     ];
 
-    // DOM
     const viewer   = document.getElementById('viewer');
     const barTitle = document.getElementById('barTitle');
     const barSub   = document.getElementById('barSubtitle');
@@ -142,32 +132,26 @@
     const countdown= document.getElementById('countdown');
     const panelSel = document.getElementById('panelSel');
 
-    // Preenche o menu de páginas
     panelSel.innerHTML = PAINEIS.map((p,idx)=>`<option value="${idx}">${p.label}</option>`).join("");
 
     let i=0, timer=null, tick=null, deadlineTs=null;
 
     function formatCountdown(ms){
-      if (ms == null) return "—";
       const s = Math.max(0, Math.ceil(ms/1000));
       return `T-${s}s`;
     }
-
     function setDeadlineFromNow(){
       const dur = parseInt(speedSel.value,10) || 60000;
       deadlineTs = Date.now() + dur;
       countdown.textContent = formatCountdown(dur);
     }
-
     function startTick(){
       stopTick();
       tick = setInterval(()=>{
         if (!deadlineTs) return;
         const left = deadlineTs - Date.now();
         countdown.textContent = formatCountdown(left);
-        if (left <= 0){
-          next(); // avança e reinicia deadline dentro do play()
-        }
+        if (left <= 0) next();
       }, 250);
     }
     function stopTick(){
@@ -191,7 +175,6 @@
       i = ((idx % PAINEIS.length) + PAINEIS.length) % PAINEIS.length;
       viewer.src = PAINEIS[i].src;
       updateBar();
-      // ao mudar manualmente, reinicia a contagem se estiver em play
       if (timer){ setDeadlineFromNow(); }
     }
 
@@ -200,11 +183,7 @@
       playBtn.classList.add('active');
       setDeadlineFromNow();
       startTick();
-      const dur = parseInt(speedSel.value,10) || 60000;
-      timer = setInterval(()=>{ /* segurança: se tick falhar, avança */
-        const left = deadlineTs ? (deadlineTs - Date.now()) : 0;
-        if (left <= 0) next();
-      }, dur);
+      timer = setInterval(()=>{}, 9999999); // só pra manter flag
     }
     function stop(){
       playBtn.classList.remove('active');
@@ -215,14 +194,12 @@
     function prev(){ show(i-1); }
     function next(){ show(i+1); if (timer) setDeadlineFromNow(); }
 
-    // eventos
     playBtn.addEventListener('click', togglePlay);
     prevBtn.addEventListener('click', prev);
     nextBtn.addEventListener('click', next);
     speedSel.addEventListener('change', () => { if (timer) play(); else countdown.textContent="⏸"; });
     panelSel.addEventListener('change', e => show(parseInt(e.target.value,10)||0));
 
-    // start
     show(0); play();
   </script>
 </body>
